@@ -1,7 +1,10 @@
-from flask import Flask, render_template, url_for, request, redirect
+from flask import Flask, render_template, url_for, request, redirect, session, logging, flash
 from flask_sqlalchemy import SQLAlchemy
-import mysql.connector
+from wtforms import Form, SelectField, TextAreaField, PasswordField, validators
+# from passlib.hash import sha256_crypt
 from datetime import datetime
+
+from wtforms.fields.core import StringField
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://Cantus:2345@localhost/ToDo"
@@ -60,6 +63,26 @@ def update(id):
 
   else:
     return render_template("update.html", task=task)
+
+class RegisterForm(Form):
+  username = StringField("Name", [validators.length(min=1, max=30)])
+  email = StringField("Email", [validators.length(min=6, max=50)])
+  password = PasswordField("Password", [
+    validators.DataRequired(),
+    validators.EqualTo("confirm", message="Password is incorrect")
+  ])
+  confirm = PasswordField("Confirm Password")
+
+@app.route("/register", methods=["GET","POST"])
+def register():
+  form = RegisterForm(request.form)
+  if request.method == "POST" and form.validate():
+    user = User(form.username.data, form.email.data,
+                    form.password.data)
+    db_session.add(user)
+    flash('Thanks for registering')
+    return redirect(url_for('login'))
+  return render_template("register.html", form=form)
 
 if __name__ == "__main__":
     app.run(debug=True)
