@@ -1,7 +1,7 @@
 from enum import unique
 from flask import Flask, render_template, url_for, request, redirect, session, logging, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_bootstrap import Bootstrap
+from flask_login import LoginManager, UserMixin, login_manager, login_user, login_required, logout_user, current_user
 from wtforms import Form, SelectField, TextAreaField, PasswordField, form, validators, BooleanField, StringField
 from passlib.hash import sha256_crypt
 from datetime import datetime
@@ -11,6 +11,10 @@ app.secret_key = 'super_secret_key'
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://Cantus:2345@localhost/ToDo"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
 
 class ToDo(db.Model):
   __tablename__ = "ToDoTable"
@@ -22,6 +26,7 @@ class ToDo(db.Model):
       return "<Task %r>" % self.id
 
 @app.route("/", methods=["POST", "GET"])
+@login_required
 def index():
     if request.method == "POST":
       task_content = request.form["content"]
@@ -66,13 +71,17 @@ def update(id):
     return render_template("update.html", task=task)
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
   __tablename__ = "Users"
   id = db.Column(db.Integer, primary_key=True, autoincrement=True)
   user = db.Column(db.String(30), unique=True)
   email = db.Column(db.String(50), unique=True)
   password = db.Column(db.String(50))
   date_created = db.Column(db.DateTime, default=datetime.now)
+
+@login_manager.user_loader
+def load_user(user_id):
+  return User.query.get(int(user_id))
 
 class RegisterForm(Form):
   username = StringField("Username", [validators.length(min=1, max=30)])
@@ -81,9 +90,9 @@ class RegisterForm(Form):
   confirm = PasswordField("Confirm Password", [validators.EqualTo("password", message="Passwords don't match")])
 
 class LoginForm(Form):
-  username = SelectField("Username", [validators.length(min=1, max=30)])
+  username = StringField("Username", [validators.length(min=1, max=30)])
   password = PasswordField("Password", [validators.DataRequired()])
-  remember = BooleanField("Remember me")
+  remember = BooleanField('remember me')
 
 @app.route("/register", methods=["GET","POST"])
 def register():
@@ -94,20 +103,21 @@ def register():
     db.session.add(new_user)
     try:
       db.session.commit()
-      flash("Thanks for using our service")
-      return redirect(url_for("base"))
+      return redirect(url_for("index"))
     except:
       return "username or email is already in use"
   return render_template("register.html", form=form)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-  form = LoginForm()
+  form = LoginForm(request.form)
 
-  if request.method == 'POST' and form.validate():
+  if request.method == 'POST':
+    print(form.username.data)
     user = User.query.filter_by(user = form.username.data).first()
     if user:
       if user.password == form.password.data:
+        login_user(user, remember = form.remember.data)
         return redirect(url_for("index"))
 
     return "Invalid username or password"
