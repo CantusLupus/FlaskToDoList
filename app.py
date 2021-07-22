@@ -4,17 +4,22 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_manager, login_user, login_required, logout_user, current_user
 from wtforms import Form, SelectField, TextAreaField, PasswordField, form, validators, BooleanField, StringField
 from passlib.hash import sha256_crypt
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql://Cantus:2345@localhost/ToDo"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
+@app.before_request
+def before_request():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(minutes=30)
 
 class ToDo(db.Model):
   __tablename__ = "ToDoTable"
@@ -22,8 +27,13 @@ class ToDo(db.Model):
   content = db.Column(db.String(200), nullable = False)
   date_created = db.Column(db.DateTime, default=datetime.now)
 
-  def __repr__(self):
-      return "<Task %r>" % self.id
+class User(UserMixin, db.Model):
+  __tablename__ = "Users"
+  id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+  user = db.Column(db.String(30), unique=True)
+  email = db.Column(db.String(50), unique=True)
+  password = db.Column(db.String(50))
+  date_created = db.Column(db.DateTime, default=datetime.now)
 
 @app.route("/", methods=["POST", "GET"])
 @login_required
@@ -41,9 +51,10 @@ def index():
 
     else:
       tasks = ToDo.query.order_by(ToDo.date_created).all()
-      return render_template("index.html", tasks=tasks)
+      return render_template("index.html", tasks=tasks, name = current_user.user )
 
 @app.route("/delete/<int:id>")
+@login_required
 def delete(id):
     task_to_delete = ToDo.query.get_or_404(id)
 
@@ -55,6 +66,7 @@ def delete(id):
       return "There was a problem deleting that task"
 
 @app.route("/update/<int:id>", methods=["GET", "POST"])
+@login_required
 def update(id):
   task = ToDo.query.get_or_404(id)
 
@@ -69,15 +81,6 @@ def update(id):
 
   else:
     return render_template("update.html", task=task)
-
-
-class User(UserMixin, db.Model):
-  __tablename__ = "Users"
-  id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-  user = db.Column(db.String(30), unique=True)
-  email = db.Column(db.String(50), unique=True)
-  password = db.Column(db.String(50))
-  date_created = db.Column(db.DateTime, default=datetime.now)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -113,15 +116,20 @@ def login():
   form = LoginForm(request.form)
 
   if request.method == 'POST':
-    print(form.username.data)
     user = User.query.filter_by(user = form.username.data).first()
     if user:
       if user.password == form.password.data:
         login_user(user, remember = form.remember.data)
         return redirect(url_for("index"))
 
-    return "Invalid username or password"
+    return render_template("login.html", form=form, invalid = "Invalid password or username")
   return render_template("login.html", form=form)
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 if __name__ == "__main__":
     app.run(debug=True)
