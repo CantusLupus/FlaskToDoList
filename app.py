@@ -26,6 +26,7 @@ class ToDo(db.Model):
   id = db.Column(db.Integer, primary_key=True)
   content = db.Column(db.String(200), nullable = False)
   date_created = db.Column(db.DateTime, default=datetime.now)
+  user_id = db.Column(db.String(30))
 
 class User(UserMixin, db.Model):
   __tablename__ = "Users"
@@ -35,12 +36,26 @@ class User(UserMixin, db.Model):
   password = db.Column(db.String(50))
   date_created = db.Column(db.DateTime, default=datetime.now)
 
+@login_manager.user_loader
+def load_user(user_id):
+  return User.query.get(int(user_id))
+
+class RegisterForm(Form):
+  username = StringField("Username", [validators.length(min=1, max=30)])
+  email = StringField("Email", [validators.length(min=6, max=50)])
+  password = PasswordField("Password", [validators.DataRequired()])
+  confirm = PasswordField("Confirm Password", [validators.EqualTo("password", message="Passwords don't match")])
+
+class LoginForm(Form):
+  username = StringField("Username", [validators.length(min=1, max=30)])
+  password = PasswordField("Password", [validators.DataRequired()])
+
 @app.route("/", methods=["POST", "GET"])
 @login_required
 def index():
     if request.method == "POST":
       task_content = request.form["content"]
-      new_task = ToDo(content = task_content)
+      new_task = ToDo(content = task_content, user_id = current_user.user)
 
       try:
         db.session.add(new_task)
@@ -49,9 +64,8 @@ def index():
       except:
         return "The task has not been added"
 
-    else:
-      tasks = ToDo.query.order_by(ToDo.date_created).all()
-      return render_template("index.html", tasks=tasks, name = current_user.user )
+    tasks = ToDo.query.filter(ToDo.user_id.like(current_user.user)).all()
+    return render_template("index.html", tasks=tasks, name = current_user.user )
 
 @app.route("/delete/<int:id>")
 @login_required
@@ -82,21 +96,6 @@ def update(id):
   else:
     return render_template("update.html", task=task)
 
-@login_manager.user_loader
-def load_user(user_id):
-  return User.query.get(int(user_id))
-
-class RegisterForm(Form):
-  username = StringField("Username", [validators.length(min=1, max=30)])
-  email = StringField("Email", [validators.length(min=6, max=50)])
-  password = PasswordField("Password", [validators.DataRequired()])
-  confirm = PasswordField("Confirm Password", [validators.EqualTo("password", message="Passwords don't match")])
-
-class LoginForm(Form):
-  username = StringField("Username", [validators.length(min=1, max=30)])
-  password = PasswordField("Password", [validators.DataRequired()])
-  remember = BooleanField('remember me')
-
 @app.route("/register", methods=["GET","POST"])
 def register():
   form = RegisterForm(request.form)
@@ -106,6 +105,7 @@ def register():
     db.session.add(new_user)
     try:
       db.session.commit()
+      login_user(new_user)
       return redirect(url_for("index"))
     except:
       return "username or email is already in use"
@@ -119,7 +119,7 @@ def login():
     user = User.query.filter_by(user = form.username.data).first()
     if user:
       if user.password == form.password.data:
-        login_user(user, remember = form.remember.data)
+        login_user(user)
         return redirect(url_for("index"))
 
     return render_template("login.html", form=form, invalid = "Invalid password or username")

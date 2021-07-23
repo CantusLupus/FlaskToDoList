@@ -2,7 +2,6 @@
 
 {% block head %}
 <title>Task Master</title>
-<link rel="stylesheet" href="/static/css/login.css">
 {% endblock %}
 
 {% block body %}
@@ -10,13 +9,15 @@
 <div class="container">
       <div class="col-md-6">
           <div class="card">
-              <form form method="POST" action="/login" class="box">
+              <form method="POST" action="/login" class="box">
                   <h1>Login</h1>
-                  <p class="text-muted"> Please enter your login and password!</p>
+                  <p class="text-muted"> Please enter your login and password</p>
                   <input type="text" name="username" class="form-control" value={{request.form.username}}> 
                   <input type="password" name="password" class="form-control" value={{request.form.password}}>
                    <p style="color: rgb(190, 0, 0);">{{ invalid }}</p> 
-                   <input type="submit" class="btn btn-primary" value="Log in"></p>
+                   <input type="submit" value="Log in"></p>
+                   <p class="text-muted">If you don't have an account yet, sign up!</p>
+                   <a class="btn_sign_up" style="text-decoration: none;" href="/register" class="sign_in">Sign Up</a>
               </form>
           </div>
       </div>
