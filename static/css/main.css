@@ -123,7 +123,7 @@ body {
   display: block;
   position: relative;
   padding: 50px 400px;
-  background: linear-gradient(to left, #b92b27, #1565c0)
+  background: linear-gradient(to left, #b92b27, #1565c0);
 }
 
 .title {
@@ -140,24 +140,52 @@ body {
   margin-top: -30px;
 }
 
-.Todo-list {
-  background-color: #fff;
-
+.subtitle {
+  margin: 20px 400px;
 }
 
-table, th, td {
-  border: 1px solid black;
-  width: 100%;
+.form-control-lg input[type="text"]{
+  margin-left: 385px;
+  margin-bottom: 20px;
+  border: 2px solid #3498db;
+  width: 450px;
 }
 
-tr:nth-of-type(odd) { 
-	background: rgb(218, 218, 218); 
-	}
-
-th {
-  background-color: rgb(111, 0, 255);
+.form-control-lg input[type="submit"] {
+  border: 2px solid #2ecc71;
+  border-radius: 24px;
+  transition: 0.25s;
+  cursor: pointer
 }
 
-.submit_form {
-  width: 100%;
+.form-control-lg input[type="submit"]:hover {
+  background: #2ecc71
+}
+
+.content_suggest {
+  text-align: center;
+}
+
+.actions {
+  border: 2px solid #2ecc71;
+  border-radius: 24px;
+  transition: 0.25s;
+  cursor: pointer;
+  color: black;
+  text-decoration: none;
+  background-color: white;
+  padding: 1px 5px;
+}
+
+.date_added{
+  padding: 0px 10px;
+}
+
+.actions:hover {
+  background: #2ecc71
+}
+
+.task_content {
+  max-width: 400px;
+  word-wrap: break-word;
 }

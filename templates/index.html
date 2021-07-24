@@ -44,12 +44,17 @@
 
 <h1 class="title">Task Master</h1>
 <h2 class="greetings">Hello, {{ name }}, nice to see you!</h2>
+<h3 class="subtitle">Create your new task right below:</h3>
+<form class="form-control-lg" action="/" method="POST">
+  <input type="text" name="content" id="content">
+  <input type="submit" value="Add Task">
+</form>
 
 <div class="content">
   {% if tasks|length < 1 %}
-  <h4 class="content_suggest">There are no tasks, create one below </h4>
+  <h4 class="content_suggest">There are no tasks, let's create one!</h4>
   {% else %}
-  <h3 class="content_title">Your tasks:</h3>
+  <h3 class="content_title">Your current tasks:</h3>
 
   <div class="Todo-list">
     <table>
@@ -60,21 +65,18 @@
       </tr>
       {% for task in tasks %}
       <tr>
-        <td>{{ task.content }}</td>
-        <td>{{ task.date_created.date() }}</td>
+        <td class="task_content">{{ task.content }}</td>
+        <td class="date_added">{{ task.date_created.date() }}</td>
         <td>
-          <a href="/delete/{{task.id}}">Delete</a>
+          <a class="actions" href="/delete/{{task.id}}">Delete</a>
           <br>
-          <a href="/update/{{task.id}}">Update</a>
+          <a class="actions" href="/update/{{task.id}}">Update</a>
         </td>
       </tr>
       {% endfor %}
     </table>
     {% endif %}
-    <form class="submit_form" action="/" method="POST">
-      <input type="text" name="content" id="content">
-      <input type="submit" value="Add Task">
-    </form>
+
   </div>
 
 
