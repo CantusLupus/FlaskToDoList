@@ -1,3 +1,2 @@
 # FlaskToDoList
-## Web app created with Flask and MySQL
-##**In progress**
+## Web app created with Flask, Boostrap and MySQL as db
